@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🗳️ Voting DApp - Głosowanie na Blockchain</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.10.0/web3.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .connect-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+
+        .connect-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .connect-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .candidates {
+            display: grid;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .candidate {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .candidate-info {
+            flex: 1;
+        }
+
+        .candidate-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .candidate-votes {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .vote-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .vote-btn:hover {
+            background: #218838;
+        }
+
+        .vote-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+
+        .admin-section {
+            border-top: 2px solid #dee2e6;
+            padding-top: 30px;
+            margin-top: 30px;
+        }
+
+        .admin-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .admin-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .admin-input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .admin-btn {
+            background: #fd7e14;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .admin-btn:hover {
+            background: #e55a00;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #cce7ff;
+            color: #0056b3;
+            border: 1px solid #99d6ff;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .status {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .candidate {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+            
+            .admin-form {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗳️ Voting DApp</h1>
+            <p>Decentralizowane głosowanie na blockchain Ethereum</p>
+        </div>
+
+        <div class="card">
+            <div class="status">
+                <div class="status-item">
+                    <div class="status-label">Status połączenia</div>
+                    <div class="status-value" id="connectionStatus">Rozłączony</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Twój adres</div>
+                    <div class="status-value" id="userAddress" style="font-size: 12px;">Brak połączenia</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Łączna liczba głosów</div>
+                    <div class="status-value" id="totalVotes">0</div>
+                </div>
+            </div>
+
+            <div id="connectionSection">
+                <button id="connectButton" class="connect-btn">
+                    🦊 Połącz z MetaMask
+                </button>
+                <div class="alert alert-info" style="margin-top: 15px;">
+                    <strong>Potrzebujesz MetaMask!</strong><br>
+                    Zainstaluj rozszerzenie MetaMask w przeglądarce żeby móc głosować.
+                    <a href="https://metamask.io" target="_blank" style="color: #0056b3;">Pobierz MetaMask</a>
+                </div>
+            </div>
+
+            <div id="votingSection" style="display: none;">
+                <h2>Kandydaci</h2>
+                <div id="candidates" class="candidates">
+                    <!-- Kandydaci będą dodani dynamicznie -->
+                </div>
+
+                <div class="admin-section">
+                    <h3 class="admin-title">Panel Administratora</h3>
+                    <div class="admin-form">
+                        <input type="text" id="candidateName" class="admin-input" placeholder="Nazwa kandydata">
+                        <button id="addCandidateBtn" class="admin-btn">Dodaj kandydata</button>
+                    </div>
+                    <button id="resetVotingBtn" class="admin-btn" style="background: #dc3545;">
+                        🗑️ Zresetuj głosowanie
+                    </button>
+                </div>
+            </div>
+
+            <div id="loadingSection" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Przetwarzanie transakcji...</p>
+            </div>
+
+            <div id="messages"></div>
+        </div>
+    </div>
+
+    <script>
+        class VotingDApp {
+            constructor() {
+                this.web3 = null;
+                this.account = null;
+                this.candidates = [];
+                this.totalVotes = 0;
+                
+                // Symulacja smart contractu w localStorage
+                this.contractData = this.loadContractData();
+                
+                this.init();
+            }
+
+            async init() {
+                this.setupEventListeners();
+                this.updateUI();
+                
+                // Sprawdź czy MetaMask jest dostępny
+                if (typeof window.ethereum === 'undefined') {
+                    this.showMessage('MetaMask nie jest zainstalowany!', 'error');
+                } else {
+                    // Sprawdź czy użytkownik był już połączony
+                    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                    if (accounts.length > 0) {
+                        await this.connectWallet();
+                    }
+                }
+            }
+
+            loadContractData() {
+                const saved = localStorage.getItem('votingContract');
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+                
+                // Domyślni kandydaci
+                return {
+                    candidates: [
+                        { id: 0, name: 'Kandydat A', votes: 0 },
+                        { id: 1, name: 'Kandydat B', votes: 0 },
+                        { id: 2, name: 'Kandydat C', votes: 0 }
+                    ],
+                    voters: {},
+                    totalVotes: 0
+                };
+            }
+
+            saveContractData() {
+                localStorage.setItem('votingContract', JSON.stringify(this.contractData));
+            }
+
+            setupEventListeners() {
+                document.getElementById('connectButton').addEventListener('click', () => {
+                    this.connectWallet();
+                });
+
+                document.getElementById('addCandidateBtn').addEventListener('click', () => {
+                    this.addCandidate();
+                });
+
+                document.getElementById('resetVotingBtn').addEventListener('click', () => {
+                    this.resetVoting();
+                });
+            }
+
+            async connectWallet() {
+                if (typeof window.ethereum === 'undefined') {
+                    this.showMessage('Zainstaluj MetaMask!', 'error');
+                    return;
+                }
+
+                try {
+                    this.showLoading(true);
+                    
+                    // Inicjalizuj Web3
+                    this.web3 = new Web3(window.ethereum);
+                    
+                    // Poproś o dostęp do konta
+                    const accounts = await window.ethereum.request({
+                        method: 'eth_requestAccounts'
+                    });
+                    
+                    this.account = accounts[0];
+                    
+                    // Nasłuchuj zmiany konta
+                    window.ethereum.on('accountsChanged', (accounts) => {
+                        if (accounts.length === 0) {
+                            this.disconnect();
+                        } else {
+                            this.account = accounts[0];
+                            this.updateUI();
+                        }
+                    });
+                    
+                    this.showMessage('Połączono z MetaMask!', 'success');
+                    this.updateUI();
+                    
+                } catch (error) {
+                    console.error('Błąd połączenia:', error);
+                    this.showMessage('Błąd połączenia z MetaMask!', 'error');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            disconnect() {
+                this.web3 = null;
+                this.account = null;
+                this.updateUI();
+            }
+
+            async vote(candidateId) {
+                if (!this.account) {
+                    this.showMessage('Najpierw połącz portfel!', 'error');
+                    return;
+                }
+
+                // Sprawdź czy już głosował
+                if (this.contractData.voters[this.account]) {
+                    this.showMessage('Już głosowałeś!', 'error');
+                    return;
+                }
+
+                try {
+                    this.showLoading(true);
+                    
+                    // Symulacja transakcji blockchain (opóźnienie)
+                    await this.simulateTransaction();
+                    
+                    // Dodaj głos
+                    this.contractData.candidates[candidateId].votes++;
+                    this.contractData.totalVotes++;
+                    this.contractData.voters[this.account] = candidateId;
+                    
+                    this.saveContractData();
+                    
+                    this.showMessage(
+                        `Głos oddany na ${this.contractData.candidates[candidateId].name}!`, 
+                        'success'
+                    );
+                    
+                    this.updateUI();
+                    
+                } catch (error) {
+                    console.error('Błąd głosowania:', error);
+                    this.showMessage('Błąd podczas głosowania!', 'error');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            addCandidate() {
+                const name = document.getElementById('candidateName').value.trim();
+                if (!name) {
+                    this.showMessage('Wpisz nazwę kandydata!', 'error');
+                    return;
+                }
+
+                const newId = this.contractData.candidates.length;
+                this.contractData.candidates.push({
+                    id: newId,
+                    name: name,
+                    votes: 0
+                });
+
+                this.saveContractData();
+                document.getElementById('candidateName').value = '';
+                
+                this.showMessage(`Dodano kandydata: ${name}`, 'success');
+                this.updateUI();
+            }
+
+            resetVoting() {
+                if (confirm('Czy na pewno chcesz zresetować głosowanie?')) {
+                    this.contractData = {
+                        candidates: [],
+                        voters: {},
+                        totalVotes: 0
+                    };
+                    
+                    this.saveContractData();
+                    this.showMessage('Głosowanie zresetowane!', 'success');
+                    this.updateUI();
+                }
+            }
+
+            async simulateTransaction() {
+                // Symulacja czasu transakcji blockchain
+                return new Promise(resolve => {
+                    setTimeout(resolve, 2000 + Math.random() * 3000);
+                });
+            }
+
+            updateUI() {
+                const isConnected = this.account !== null;
+                
+                // Status połączenia
+                document.getElementById('connectionStatus').textContent = 
+                    isConnected ? 'Połączony' : 'Rozłączony';
+                
+                // Adres użytkownika
+                document.getElementById('userAddress').textContent = 
+                    isConnected ? `${this.account.substring(0, 6)}...${this.account.substring(38)}` : 'Brak połączenia';
+                
+                // Łączna liczba głosów
+                document.getElementById('totalVotes').textContent = this.contractData.totalVotes;
+                
+                // Sekcje
+                document.getElementById('connectionSection').style.display = isConnected ? 'none' : 'block';
+                document.getElementById('votingSection').style.display = isConnected ? 'block' : 'none';
+                
+                // Kandydaci
+                this.renderCandidates();
+            }
+
+            renderCandidates() {
+                const container = document.getElementById('candidates');
+                
+                if (this.contractData.candidates.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">Brak kandydatów. Dodaj pierwszego kandydata!</p>';
+                    return;
+                }
+                
+                const totalVotes = this.contractData.totalVotes || 1; // Avoid division by zero
+                const hasVoted = this.account && this.contractData.voters[this.account] !== undefined;
+                
+                container.innerHTML = this.contractData.candidates.map(candidate => {
+                    const percentage = (candidate.votes / totalVotes * 100).toFixed(1);
+                    
+                    return `
+                        <div class="candidate">
+                            <div class="candidate-info">
+                                <div class="candidate-name">${candidate.name}</div>
+                                <div class="candidate-votes">${candidate.votes} głosów (${percentage}%)</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${percentage}%"></div>
+                                </div>
+                            </div>
+                            <button class="vote-btn" ${hasVoted ? 'disabled' : ''} 
+                                    onclick="app.vote(${candidate.id})">
+                                ${hasVoted ? '✅ Oddano głos' : '🗳️ Głosuj'}
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            showLoading(show) {
+                document.getElementById('loadingSection').style.display = show ? 'block' : 'none';
+                document.getElementById('votingSection').style.display = show ? 'none' : (this.account ? 'block' : 'none');
+            }
+
+            showMessage(message, type = 'info') {
+                const container = document.getElementById('messages');
+                const div = document.createElement('div');
+                div.className = `alert alert-${type}`;
+                div.textContent = message;
+                
+                container.appendChild(div);
+                
+                setTimeout(() => {
+                    div.remove();
+                }, 5000);
+            }
+        }
+
+        // Inicjalizacja aplikacji
+        const app = new VotingDApp();
+    </script>
+</body>
+</html>
